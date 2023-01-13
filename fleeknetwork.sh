@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function logo {
-  bash <(https://raw.githubusercontent.com/F1rstCap1tal/Logo/main/logo.sh)
+  bash <(curl -s https://raw.githubusercontent.com/F1rstCap1tal/Logo/main/logo.sh)
 }
 
 function line {

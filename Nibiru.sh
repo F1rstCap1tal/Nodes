@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "-----------------------------------------------------------------------------"
-curl -s https://https://raw.githubusercontent.com/F1rstCap1tal/Logo/main/logo.sh | bash
+curl -s https://raw.githubusercontent.com/F1rstCap1tal/Logo/main/logo.sh | bash
 echo "-----------------------------------------------------------------------------"
 if [ ! $NIBIRU_NODENAME ]; then
 	read -p "Введите ваше имя ноды(придумайте, без спецсимволов - только буквы и цифры): " NIBIRU_NODENAME

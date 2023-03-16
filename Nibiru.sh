@@ -1,87 +1,147 @@
 #!/bin/bash
-echo "-----------------------------------------------------------------------------"
-curl -s https://raw.githubusercontent.com/F1rstCap1tal/Logo/main/logo.sh | bash
-echo "-----------------------------------------------------------------------------"
-if [ ! $NIBIRU_NODENAME ]; then
-	read -p "Введите ваше имя ноды(придумайте, без спецсимволов - только буквы и цифры): " NIBIRU_NODENAME
+
+function colors {
+  GREEN="\e[32m"
+  RED="\e[39m"
+  NORMAL="\e[0m"
+}
+
+colors
+
+echo -e "${GREEN}███████╗░░███╗░░██████╗░░██████╗████████╗  ░█████╗░░█████╗░██████╗░██╗████████╗░█████╗░██╗░░░░░${NORMAL}"
+echo -e "${GREEN}██╔════╝░████║░░██╔══██╗██╔════╝╚══██╔══╝  ██╔══██╗██╔══██╗██╔══██╗██║╚══██╔══╝██╔══██╗██║░░░░░${NORMAL}"
+echo -e "${GREEN}█████╗░░██╔██║░░██████╔╝╚█████╗░░░░██║░░░  ██║░░╚═╝███████║██████╔╝██║░░░██║░░░███████║██║░░░░░${NORMAL}"
+echo -e "${GREEN}██╔══╝░░╚═╝██║░░██╔══██╗░╚═══██╗░░░██║░░░  ██║░░██╗██╔══██║██╔═══╝░██║░░░██║░░░██╔══██║██║░░░░░${NORMAL}"
+echo -e "${GREEN}██║░░░░░███████╗██║░░██║██████╔╝░░░██║░░░  ╚█████╔╝██║░░██║██║░░░░░██║░░░██║░░░██║░░██║███████╗${NORMAL}"
+echo -e "${GREEN}╚═╝░░░░░╚══════╝╚═╝░░╚═╝╚═════╝░░░░╚═╝░░░  ░╚════╝░╚═╝░░╚═╝╚═╝░░░░░╚═╝░░░╚═╝░░░╚═╝░░╚═╝╚══════╝${NORMAL}"
+
+echo -e "$ Наш Телеграмм канал t.me/F1rstCap1tal${NORMAL}"
+echo -e "$ Наш ЧАТ t.me/F1rst_Cap1tal_chat${NORMAL}"
+
+sleep 3
+
+if [ ! $NODENAME ]; then
+	read -p "Node adinizi girin: " NODENAME
+	echo 'export NODENAME='$NODENAME >> $HOME/.bash_profile
 fi
+
+echo "export NIBIRU_CHAIN_ID=nibiru-itn-1" >> $HOME/.bash_profile
+source $HOME/.bash_profile
+
+echo -e "\e[1m\e[32m1. Sunucu guncellemesi yapiliyor.. \e[0m"
+echo "======================================================"
 sleep 1
-NIBIRU_CHAIN="nibiru-itn-1"
-echo 'export NIBIRU_CHAIN='$NIBIRU_CHAIN >> $HOME/.profile
-echo 'export NIBIRU_NODENAME='$NIBIRU_NODENAME >> $HOME/.profile
-echo "-----------------------------------------------------------------------------"
-echo "Устанавливаем софт"
-echo "-----------------------------------------------------------------------------"
+
 sudo apt update && sudo apt upgrade -y
-curl -s https://raw.githubusercontent.com/F1rstCap1tal/tools/main/ufw.sh | bash &>/dev/null
-curl -s https://raw.githubusercontent.com/F1rstCap1tal/tools/main/go.sh | bash &>/dev/null
-sudo apt install --fix-broken -y &>/dev/null
-sudo apt install nano mc wget build-essential git jq make gcc tmux chrony lz4 unzip ncdu htop -y &>/dev/null
-source .profile
-source .bashrc
+
+echo -e "\e[1m\e[32m2. Gerekli kurulumlar yapiliyor.. \e[0m"
+echo "======================================================"
 sleep 1
-echo "Весь необходимый софт установлен"
-echo "-----------------------------------------------------------------------------"
+sudo apt install curl tar wget clang pkg-config libssl-dev libleveldb-dev jq build-essential bsdmainutils git make ncdu htop screen unzip bc fail2ban htop -y
+
+sudo apt install lz4 -y
+
+echo -e "\e[1m\e[32m2. Go Yukleniyor.. \e[0m"
+echo "======================================================"
+sleep 1
+
+if ! [ -x "$(command -v go)" ]; then
+ver="1.19" && \
+wget "https://golang.org/dl/go$ver.linux-amd64.tar.gz" && \
+sudo rm -rf /usr/local/go && \
+sudo tar -C /usr/local -xzf "go$ver.linux-amd64.tar.gz" && \
+rm "go$ver.linux-amd64.tar.gz" && \
+echo "export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin" >> $HOME/.bash_profile && \
+source $HOME/.bash_profile && \
+go version
+fi
+
+
+echo -e "\e[1m\e[32m3. Binary dosyalari yukleniyor.. \e[0m"
+echo "======================================================"
+sleep 1
+
+
 cd $HOME
-wget https://github.com/NibiruChain/nibiru/releases/download/v0.19.2/nibid_0.19.2_linux_amd64.tar.gz
-tar -xvzf nibid_0.19.2_linux_amd64.tar.gz &>/dev/null
-sudo chmod +x nibid
-mkdir -p $HOME/go/bin
-sudo mv nibid $HOME/go/bin/nibid
-rm nibid_0.19.2_linux_amd64.tar.gz
-echo "Репозиторий успешно склонирован, начинаем билд"
-echo "-----------------------------------------------------------------------------"
+git clone https://github.com/NibiruChain/nibiru
+cd nibiru
+git checkout v0.19.2
+make install
+
 nibid config chain-id $NIBIRU_CHAIN_ID
-nibid config keyring-backend file
-nibid init $NIBIRU_NODENAME --chain-id $NIBIRU_CHAIN_ID &>/dev/null
-nibid config node tcp://127.0.0.1:11657
-wget -O $HOME/.nibid/config/genesis.json https://networks.itn.nibiru.fi/nibiru-itn-1/genesis
-#wget -qO $HOME/.nibid/config/addrbook.json https://snapshot.yeksin.net/nibiru/addrbook.json &>/dev/null
-sed -i -e "s%^moniker *=.*%moniker = \"$NIBIRU_NODENAME\"%; "\
-"s%^external_address *=.*%external_address = \"`wget -qO- eth0.me`:26656\"%; " $HOME/.nibid/config/config.toml
-SEEDS="a431d3d1b451629a21799963d9eb10d83e261d2c@seed-1.itn-1.nibiru.fi:26656,6a78a2a5f19c93661a493ecbe69afc72b5c54117@seed-2.itn-1.nibiru.fi:26656"
-PEERS="e2b8b9f3106d669fe6f3b49e0eee0c5de818917e@213.239.217.52:32656,930b1eb3f0e57b97574ed44cb53b69fb65722786@144.76.30.36:15662,ad002a4592e7bcdfff31eedd8cee7763b39601e7@65.109.122.105:36656,4a81486786a7c744691dc500360efcdaf22f0840@15.235.46.50:26656,68874e60acc2b864959ab97e651ff767db47a2ea@65.108.140.220:26656,d5519e378247dfb61dfe90652d1fe3e2b3005a5b@65.109.68.190:39656"
-sed -i -e "s/^seeds *=.*/seeds = \"$SEEDS\"/; s/^persistent_peers *=.*/persistent_peers = \"$PEERS\"/" $HOME/.nibid/config/config.toml
-pruning="custom"
-pruning_keep_recent="100"
-pruning_keep_every="0"
-pruning_interval="10"
-sed -i -e "s/^pruning *=.*/pruning = \"$pruning\"/" $HOME/.nibid/config/app.toml
-sed -i -e "s/^pruning-keep-recent *=.*/pruning-keep-recent = \"$pruning_keep_recent\"/" $HOME/.nibid/config/app.toml
-sed -i -e "s/^pruning-keep-every *=.*/pruning-keep-every = \"$pruning_keep_every\"/" $HOME/.nibid/config/app.toml
-sed -i -e "s/^pruning-interval *=.*/pruning-interval = \"$pruning_interval\"/" $HOME/.nibid/config/app.toml
-sed -i -e "s/^minimum-gas-prices *=.*/minimum-gas-prices = \"0.025unibi\"/" $HOME/.nibid/config/app.toml
-sed -i -e "s/prometheus = false/prometheus = true/" $HOME/.nibid/config/config.toml
 
-sed -i.bak -e "s%^proxy_app = \"tcp://127.0.0.1:26658\"%proxy_app = \"tcp://127.0.0.1:11658\"%; s%^laddr = \"tcp://127.0.0.1:26657\"%laddr = \"tcp://127.0.0.1:11657\"%; s%^pprof_laddr = \"localhost:6060\"%pprof_laddr = \"localhost:11060\"%; s%^laddr = \"tcp://0.0.0.0:26656\"%laddr = \"tcp://0.0.0.0:11656\"%; s%^prometheus_listen_addr = \":26660\"%prometheus_listen_addr = \":11660\"%" $HOME/.nibid/config/config.toml
-
-sed -i.bak -e "s%^address = \"tcp://0.0.0.0:1317\"%address = \"tcp://0.0.0.0:11317\"%; s%^address = \":8080\"%address = \":11080\"%; s%^address = \"0.0.0.0:9090\"%address = \"0.0.0.0:11090\"%; s%^address = \"0.0.0.0:9091\"%address = \"0.0.0.0:11091\"%; s%^address = \"0.0.0.0:8545\"%address = \"0.0.0.0:11545\"%; s%^ws-address = \"0.0.0.0:8546\"%ws-address = \"0.0.0.0:11546\"%" $HOME/.nibid/config/app.toml
+nibid init $NODENAME --chain-id $NIBIRU_CHAIN_ID
 
 
-echo "Билд закончен, переходим к инициализации ноды"
-echo "-----------------------------------------------------------------------------"
-sudo tee <<EOF >/dev/null /etc/systemd/journald.conf
-Storage=persistent
-EOF
-sudo systemctl restart systemd-journald
+echo -e "\e[1m\e[32m3. Genesis dosyasi indiriliyor, seed/peer ayari yapiliyor.. \e[0m"
+echo "======================================================"
+sleep 1
 
-sudo tee <<EOF >/dev/null /etc/systemd/system/nibid.service
+curl -s https://networks.itn.nibiru.fi/nibiru-itn-1/genesis > $HOME/.nibid/config/genesis.json
+wget -O $HOME/.nibid/config/addrbook.json "https://raw.githubusercontent.com/obajay/nodes-Guides/main/Nibiru/addrbook.json"
+
+
+pruning="custom" && \
+pruning_keep_recent="100" && \
+pruning_keep_every="0" && \
+pruning_interval="10" && \
+sed -i -e "s/^pruning *=.*/pruning = \"$pruning\"/" ~/.nibid/config/app.toml && \
+sed -i -e "s/^pruning-keep-recent *=.*/pruning-keep-recent = \"$pruning_keep_recent\"/" ~/.nibid/config/app.toml && \
+sed -i -e "s/^pruning-keep-every *=.*/pruning-keep-every = \"$pruning_keep_every\"/" ~/.nibid/config/app.toml && \
+sed -i -e "s/^pruning-interval *=.*/pruning-interval = \"$pruning_interval\"/" ~/.nibid/config/app.toml
+
+indexer="null" && \
+sed -i -e "s/^indexer *=.*/indexer = \"$indexer\"/" $HOME/.nibid/config/config.toml
+
+sed -i.bak -e "s/^minimum-gas-prices *=.*/minimum-gas-prices = \"0.0unibi\"/;" ~/.nibid/config/app.toml
+sed -i -e "s/^filter_peers *=.*/filter_peers = \"true\"/" $HOME/.nibid/config/config.toml
+external_address=$(wget -qO- eth0.me) 
+sed -i.bak -e "s/^external_address *=.*/external_address = \"$external_address:26656\"/" $HOME/.nibid/config/config.toml
+peers="d5519e378247dfb61dfe90652d1fe3e2b3005a5b@65.109.68.190:39656,68874e60acc2b864959ab97e651ff767db47a2ea@65.108.140.220:26656,769b35816998e91918569c3bbebb6e016ddd74b5@35.243.210.205:26656,e2b8b9f3106d669fe6f3b49e0eee0c5de818917e@213.239.217.52:32656"
+sed -i.bak -e "s/^persistent_peers *=.*/persistent_peers = \"$peers\"/" $HOME/.nibid/config/config.toml
+seeds=""
+sed -i.bak -e "s/^seeds =.*/seeds = \"$seeds\"/" $HOME/.nibid/config/config.toml
+sed -i 's/max_num_inbound_peers =.*/max_num_inbound_peers = 100/g' $HOME/.nibid/config/config.toml
+sed -i 's/max_num_outbound_peers =.*/max_num_outbound_peers = 100/g' $HOME/.nibid/config/config.toml
+CONFIG_TOML="$HOME/.nibid/config/config.toml"
+ sed -i 's/timeout_propose =.*/timeout_propose = "100ms"/g' $CONFIG_TOML
+ sed -i 's/timeout_propose_delta =.*/timeout_propose_delta = "500ms"/g' $CONFIG_TOML
+ sed -i 's/timeout_prevote =.*/timeout_prevote = "100ms"/g' $CONFIG_TOML
+ sed -i 's/timeout_prevote_delta =.*/timeout_prevote_delta = "500ms"/g' $CONFIG_TOML
+ sed -i 's/timeout_precommit =.*/timeout_precommit = "100ms"/g' $CONFIG_TOML
+ sed -i 's/timeout_precommit_delta =.*/timeout_precommit_delta = "500ms"/g' $CONFIG_TOML
+ sed -i 's/timeout_commit =.*/timeout_commit = "1s"/g' $CONFIG_TOML
+ sed -i 's/skip_timeout_commit =.*/skip_timeout_commit = false/g' $CONFIG_TOML
+
+
+
+echo -e "\e[1m\e[32m4. Servis dosyasi olusturuluyor.. \e[0m"
+echo "======================================================"
+sleep 1
+
+
+sudo tee /etc/systemd/system/nibid.service > /dev/null <<EOF
 [Unit]
-  Description=Nibiru Cosmos daemon
-  After=network-online.target
+Description=nibiru
+After=network-online.target
+
 [Service]
-  User=$USER
-  ExecStart=$(which nibid) start
-  Restart=on-failure
-  RestartSec=10
-  LimitNOFILE=65535
+User=$USER
+ExecStart=$(which nibid) start
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65535
+
 [Install]
-  WantedBy=multi-user.target
+WantedBy=multi-user.target
 EOF
 
-sudo systemctl enable nibid &>/dev/null
-sudo systemctl daemon-reload
-sudo systemctl restart nibid
+echo -e "\e[1m\e[32m4. Servis baslatiliyor.. \e[0m"
+echo "======================================================"
+sleep 1
 
-echo "Validator Node $NIBIRU_NODENAME успешно установлена"
-echo "-----------------------------------------------------------------------------"
+sudo systemctl daemon-reload
+systemctl restart systemd-journald.service
+sudo systemctl enable nibid
+sudo systemctl restart nibid
+source $HOME/.bash_profile
